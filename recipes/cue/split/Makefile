@@ -1,0 +1,43 @@
+FILEFORMAT = "`printf %02g $$TRACKNUMBER` - $$ARTIST - $$TITLE.flac"
+remcontents = if [ -f $(1) ]; then cat $(1) | while read f; do rm -f "$$f";done;fi
+
+all: split output
+
+split: in.cue
+	make clean
+	cuebreakpoints $< | shnsplit -o flac *.flac
+	cuetag $< split-track*.flac
+	ls split-track*.flac > $@
+
+output: Makefile
+	rm -f $@
+	cat split | while read a; do \
+	    ARTIST=`metaflac "$$a" --show-tag=ARTIST | sed s/.*=//g`; \
+	    TITLE=`metaflac "$$a" --show-tag=TITLE | sed s/.*=//g`; \
+	    TRACKNUMBER=`metaflac "$$a" --show-tag=TRACKNUMBER | sed s/.*=//g`; \
+	    mv "$$a" $(FILEFORMAT); \
+	    echo $(FILEFORMAT) >> $@; \
+	done
+	cp $@ split
+
+clean:
+	if [ -f output ]; then $(call remcontents,output);rm -f output split;fi
+	if [ -f split ]; then $(call remcontents,split);rm -f split;fi
+
+install-tools:
+	sudo apt-get install cuetools shntool flac wavpack
+
+# list of required files, besides in.cue
+require:
+	@for a in *.flac; do \
+	echo "$$a"; \
+	done
+
+# list of files to save, besides in.cue
+# everything else will be deleted
+provide:
+	@for a in *.flac; do \
+	echo "$$a"; \
+	done
+
+.PHONY: all install-tools require provide clean
