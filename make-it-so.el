@@ -192,7 +192,8 @@ In addition to `mis-abort' copy over the files listed in \"provide\"."
 ;; ——— Utilities ———————————————————————————————————————————————————————————————
 (defun mis-directory-files (directory)
   "Return results of (`directory-files' DIRECTORY) without \".\" and \"..\"."
-  (delete "." (delete ".." (directory-files directory))))
+  (and (file-exists-p directory)
+       (delete "." (delete ".." (directory-files directory)))))
 
 (defun mis-recipes-by-ext (ext)
   "Return a list of recipes available for EXT."
