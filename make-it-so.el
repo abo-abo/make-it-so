@@ -192,6 +192,14 @@ In addition to `mis-abort' copy over the files listed in \"provide\"."
     (mapc (lambda (f) (mis-rename-unquote f (expand-file-name ".."))) provides)
     (mis-abort)))
 
+;;;###autoload
+(defun mis-replace ()
+  "Finalize transformation and move source files to trash."
+  (interactive)
+  (mis-finalize)
+  (mapc 'mis-delete-file mis-source-files)
+  (revert-buffer))
+
 ;; ——— Utilities ———————————————————————————————————————————————————————————————
 (defun mis-directory-files (directory)
   "Return results of (`directory-files' DIRECTORY) without \".\" and \"..\"."
