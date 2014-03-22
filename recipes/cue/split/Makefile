@@ -1,12 +1,16 @@
 FILEFORMAT = "`printf %02g $$TRACKNUMBER` - $$ARTIST - $$TITLE.flac"
+
+# ———  —————————————————————————————————————————————————————————————————————————
 remcontents = if [ -f $(1) ]; then cat $(1) | while read f; do rm -f "$$f";done;fi
+
+CUEFILE = $(shell dir *.cue)
 
 all: split output
 
-split: in.cue
+split: $(CUEFILE)
 	make clean
-	cuebreakpoints $< | shnsplit -o flac *.flac
-	cuetag $< split-track*.flac
+	cuebreakpoints "$(CUEFILE)" | shnsplit -o flac *.flac
+	cuetag "$(CUEFILE)" split-track*.flac
 	ls split-track*.flac > $@
 
 output: Makefile
@@ -27,13 +31,13 @@ clean:
 install-tools:
 	sudo apt-get install cuetools shntool flac wavpack
 
-# list of required files, besides in.cue
+# list of required files, besides the cue file
 require:
 	@for a in *.flac; do \
 	echo "$$a"; \
 	done
 
-# list of files to save, besides in.cue
+# list of files to save, besides the cue file
 # everything else will be deleted
 provide:
 	@for a in *.flac; do \
