@@ -196,6 +196,23 @@ In addition to `mis-abort' copy over the files listed in \"provide\"."
     (mapc 'mis-delete-file sources))
   (revert-buffer))
 
+;;;###autoload
+(defun mis-dispatch ()
+  "Choose \"mis-\" via `helm'."
+  (interactive)
+  (helm :sources
+        `((name . "Actions")
+          (candidates .
+                      ,(mapcar
+                        (lambda (x)
+                          (list
+                           (format "% -30s%s" x
+                                   (or (cdr (assoc x mis-bindings-alist))
+                                       "not bound"))
+                           x))
+                        '(mis-finalize mis-abort mis-replace)))
+          (action . (lambda (x) (call-interactively (car x)))))))
+
 ;; ——— Utilities ———————————————————————————————————————————————————————————————
 (defun mis-directory-files (directory)
   "Return results of (`directory-files' DIRECTORY) without \".\" and \"..\"."
