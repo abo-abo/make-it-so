@@ -6,21 +6,19 @@ channels = 2
 DIRFLAC = $(shell dir *.flac)
 DIRMP3 = $(DIRFLAC:.flac=.mp3)
 
-all: $(DIRMP3)
+all: clean Makefile $(DIRMP3)
 
 %.mp3: %.flac
 	ffmpeg -i $< -ab $(bitrate) -ac $(channels) -ar $(frequency) $@
+	echo $@ >> provide
 
 clean:
-	rm -f *.mp3
-
-provide:
-	@echo $(wildcard *.mp3)
-
-require:
-	@echo
+	rm -f *.mp3 provide
 
 install-tools:
 	sudo apt-get install ffmpeg
+
+require:
+	@echo
 
 .PHONY: all install-tools require provide clean
