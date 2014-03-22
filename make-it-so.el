@@ -189,21 +189,7 @@ In addition to `mis-abort' copy over the files listed in \"provide\"."
     (error "No provide in current directory"))
   (let ((provides (mis-slurp "provide")))
     (setq provides (split-string provides "\n" t))
-    (unless
-        (and (= 1 (length provides))
-             (let* ((f1 (car provides))
-                    (ext1 (file-name-extension f1))
-                    (f2 (cadr (mis-file-names)))
-                    (ext2 (file-name-extension f2)))
-               (unless (string= ext1 ext2)
-                 (rename-file
-                  f1
-                  (format "../%s.%s"
-                          (file-name-sans-extension
-                           (file-name-nondirectory f2))
-                          ext1))
-                 t)))
-      (mapc (lambda (f) (rename-file f "..")) provides))
+    (mapc (lambda (f) (mis-rename-unquote f (expand-file-name ".."))) provides)
     (mis-abort)))
 
 ;; ——— Utilities ———————————————————————————————————————————————————————————————
