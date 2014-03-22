@@ -239,11 +239,13 @@ In addition to `mis-abort' copy over the files listed in \"provide\"."
 
 (defun mis-slurp (file)
   "Return contents of FILE."
-  (with-temp-buffer
-    (insert-file-contents file)
-    (buffer-substring-no-properties
-     (point-min)
-     (point-max))))
+  (if (file-exists-p file)
+      (with-temp-buffer
+        (insert-file-contents file)
+        (buffer-substring-no-properties
+         (point-min)
+         (point-max)))
+    (error "No file \"%s\" in current directory" file)))
 
 (defun mis-spit (str file)
   "Write STR to FILE."
