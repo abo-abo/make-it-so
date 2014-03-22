@@ -1,26 +1,24 @@
 left   = 1
 top    = 10
-width  = 950
-height = 715
+width  = 220
+height = 220
 
-all: out.ogv
+# ———  —————————————————————————————————————————————————————————————————————————
+INOGV = $(shell find . -maxdepth 1 -type f -name '*.ogv' ! -name '*.out.ogv' | tr '\n' ' ')
+OUTOGV = $(INOGV:.ogv=.out.ogv)
 
-out.ogv: in.ogv Makefile ffmpeg2pass-0.log
-	rm -f $@
-	ffmpeg -i $< \
-	-r 24 \
-	-mbd rd -flags +mv4+aic -trellis 2 -cmp 2 -subcmp 2 -g 300 -pass 2 \
+all: clean $(OUTOGV)
+
+%.out.ogv: %.ogv
+	rm -f *.out.ogv
+	ffmpeg -i $< -r 24 -mbd rd -flags +mv4+aic -trellis 2 -cmp 2 -subcmp 2 -g 300 -pass 1 \
+	-y -f ogg -vf "crop=$(width):$(height):$(left):$(top)" /dev/null
+	ffmpeg -i $< -r 24 -mbd rd -flags +mv4+aic -trellis 2 -cmp 2 -subcmp 2 -g 300 -pass 2 \
 	-vf "crop=$(width):$(height):$(left):$(top)" $@
-
-ffmpeg2pass-0.log: in.ogv
-	rm -f $@
-	ffmpeg -i $< \
-	-r 24 \
-	-mbd rd -flags +mv4+aic -trellis 2 -cmp 2 -subcmp 2 -g 300 -pass 1 \
-	-vf "crop=$(width):$(height):$(left):$(top)" out.ogv
+	echo $@ >> provide
 
 clean:
-	rm -f out.ogv ffmpeg2pass-0.log
+	rm -f *.out.ogv *.log provide
 
 install-tools:
 	sudo apt-get install ffmpeg
@@ -28,9 +26,4 @@ install-tools:
 require:
 	@echo
 
-provide:
-	@echo
-
-.PHONY: all install-tools require provide clean
-
-
+.PHONY: all install-tools require clean
