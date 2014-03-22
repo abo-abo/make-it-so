@@ -93,11 +93,6 @@
 (defvar mis-source-files nil
   "Current set of files to transform.")
 
-(defvar mis-target-files nil
-  "Mapping of `mis-source-files' to the transformation directory.
-So to cancel the transformation, rename each file in
-`mis-target-files' to `mis-source-files'.")
-
 ;; ——— Interactive —————————————————————————————————————————————————————————————
 ;;;###autoload
 (define-minor-mode mis-mode
@@ -139,8 +134,11 @@ Jump to the Makefile of the selected recipe."
 (defun mis-make-it-so ()
   "When called from `dired', offer a list of transformations."
   (interactive)
-  (setq mis-source-files (dired-get-marked-files nil current-prefix-arg))
-  (if (mis-all-equal (mapcar #'file-name-extension mis-source-files))
+  (if (mis-all-equal
+       (mapcar
+        #'file-name-extension
+        (setq mis-source-files
+              (dired-get-marked-files nil current-prefix-arg))))
       (let* ((ext (file-name-extension (car mis-source-files)))
              (candidates (mis-recipes-by-ext ext)))
         (if candidates
@@ -161,7 +159,9 @@ This function should revert to the state before `mis-make-it-so' was called."
   (let ((makefile-buffer (find-buffer-visiting (expand-file-name "Makefile"))))
     (when makefile-buffer
       (kill-buffer makefile-buffer)))
-  (cl-mapcar 'rename-file mis-target-files mis-source-files)
+  (let ((targets (read (mis-slurp "targets")))
+        (sources (read (mis-slurp "sources"))))
+    (cl-mapcar 'rename-file targets sources))
   (let ((dir default-directory))
     (dired "..")
     (delete-directory dir t))
@@ -176,8 +176,7 @@ In addition to `mis-abort' copy over the files listed in \"provide\"."
     (error "No Makefile in current directory"))
   (unless (file-exists-p "provide")
     (error "No provide in current directory"))
-  (let ((provides (mis-slurp "provide")))
-    (setq provides (split-string provides "\n" t))
+  (let ((provides (split-string (mis-slurp "provide") "\n" t)))
     (mapc (lambda (f) (mis-rename-unquote f (expand-file-name ".."))) provides)
     (mis-abort)))
 
@@ -185,8 +184,9 @@ In addition to `mis-abort' copy over the files listed in \"provide\"."
 (defun mis-replace ()
   "Finalize transformation and move source files to trash."
   (interactive)
-  (mis-finalize)
-  (mapc 'mis-delete-file mis-source-files)
+  (let ((sources (read (mis-slurp "sources"))))
+    (mis-finalize)
+    (mapc 'mis-delete-file sources))
   (revert-buffer))
 
 ;; ——— Utilities ———————————————————————————————————————————————————————————————
@@ -233,7 +233,8 @@ In addition to `mis-abort' copy over the files listed in \"provide\"."
 
 (defun mis-action (x)
   "Make it so for recipe X."
-  (let* ((source (file-name-nondirectory (car mis-source-files)))
+  (let* ((sources mis-source-files)
+         (source (file-name-nondirectory (car sources)))
          (ext (file-name-extension source))
          (basedir (or (file-name-directory source)
                       default-directory))
@@ -250,16 +251,16 @@ In addition to `mis-abort' copy over the files listed in \"provide\"."
       (if (string-match "make:" requires)
           (error "Makefile must have a \"require\" target")
         (mkdir dir)
-        (setq mis-source-files
-              (append mis-source-files
-                      (mapcar 'expand-file-name
-                              (split-string requires "\n" t))))
-        (setq mis-target-files
-              (mapcar (lambda (x) (mis-rename-quote x dir))
-                      mis-source-files))
         (rename-file "Makefile" dir)
-        ;; (mis-spit requires (expand-file-name "requires" dir))
-        ))
+        (setq sources (append sources
+                              (mapcar 'expand-file-name
+                                      (split-string requires "\n" t))))
+        (let ((targets (mapcar (lambda (x) (mis-rename-quote x dir))
+                               sources)))
+          (mis-spit (prin1-to-string sources)
+                    (expand-file-name "sources" dir))
+          (mis-spit (prin1-to-string targets)
+                    (expand-file-name "targets" dir)))))
     (find-file (expand-file-name "Makefile" dir))))
 
 (defun mis-delete-file (file)
