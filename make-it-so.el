@@ -151,17 +151,6 @@ Jump to the Makefile of the selected recipe."
           (error "No candidates for *.%s" ext)))
     (error "Mixed extensions in selection")))
 
-(defun mis-file-names ()
-  (let* ((dir default-directory)
-         (file (car (last (split-string dir "/" t))))
-         (lst (split-string file "[:.]" t)))
-    (unless (= (length lst) 3)
-      (error "Unexpected 3 elements, got %s" lst))
-    (let ((ext (car (last lst)))
-          (project (car lst)))
-      (list (format "in.%s" ext)
-            (format "../%s.%s" (nth 1 lst) ext)))))
-
 ;;;###autoload
 (defun mis-abort ()
   "Abort tranformation.
