@@ -102,10 +102,17 @@
   :keymap mis-mode-map
   :group 'make-it-so)
 
+(defcustom mis-bindings-alist
+  '((mis-make-it-so . ",")
+    (mis-finalize . "C-,")
+    (mis-abort . "C-M-,")
+    (mis-dispatch . "C-.")
+    (mis-replace . "C-M-."))
+  "List of bindings for the minor mode.")
+
 (let ((map mis-mode-map))
-  (define-key map (kbd ",") 'mis-make-it-so)
-  (define-key map (kbd "C-,") 'mis-finalize)
-  (define-key map (kbd "C-M-,") 'mis-abort))
+  (mapc (lambda (x) (define-key map (kbd (cdr x)) (car x)))
+        mis-bindings-alist))
 
 ;;;###autoload
 (defun mis-mode-on ()
