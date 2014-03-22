@@ -5,7 +5,7 @@ remcontents = if [ -f $(1) ]; then cat $(1) | while read f; do rm -f "$$f";done;
 
 CUEFILE = $(shell dir *.cue)
 
-all: split output
+all: split provide
 
 split: $(CUEFILE)
 	make clean
@@ -13,7 +13,7 @@ split: $(CUEFILE)
 	cuetag "$(CUEFILE)" split-track*.flac
 	ls split-track*.flac > $@
 
-output: Makefile
+provide: Makefile
 	rm -f $@
 	cat split | while read a; do \
 	    ARTIST=`metaflac "$$a" --show-tag=ARTIST | sed s/.*=//g`; \
@@ -37,11 +37,4 @@ require:
 	echo "$$a"; \
 	done
 
-# list of files to save, besides the cue file
-# everything else will be deleted
-provide:
-	@for a in *.flac; do \
-	echo "$$a"; \
-	done
-
-.PHONY: all install-tools require provide clean
+.PHONY: all install-tools require clean
