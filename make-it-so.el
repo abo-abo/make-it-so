@@ -277,6 +277,15 @@ In addition to `mis-abort' copy over the files listed in \"provide\"."
     (rename-file file dest)
     dest))
 
+(defun mis-rename-unquote (file dir)
+  "Move FILE to DIR, changing spaces to underscores."
+  (let ((dest (expand-file-name
+               (replace-regexp-in-string
+                "_" " " (file-name-nondirectory file))
+               dir)))
+    (rename-file file dest)
+    dest))
+
 (provide 'make-it-so)
 
 ;;; Local Variables:
