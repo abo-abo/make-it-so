@@ -1,25 +1,28 @@
-all: output.gif
 
-output: in.ogv Makefile
-	mplayer -ao null $< -vo jpeg:outdir=output
+# ———  —————————————————————————————————————————————————————————————————————————
+OGV = $(shell find . -maxdepth 1 -type f -name '*.ogv' ! -name '*.out.ogv' | tr '\n' ' ')
+GIF = $(OGV:.ogv=.gif)
 
-unoptimized.gif: output
-	convert output/* unoptimized.gif
+all: $(GIF)
 
-output.gif: unoptimized.gif
+%.output: %.ogv
+	mplayer -ao null $< -vo jpeg:outdir=$@
+
+%.unoptimized.gif: %.output
+	convert $</* $@
+
+%.gif: %.unoptimized.gif
 	convert $^ -fuzz 10% -layers Optimize $@
+	echo $@ >> provide
 
 clean:
 	rm -f *.gif
-	rm -rf ./output
+	rm -rf ./*.output
 
 install-tools:
 	sudo apt-get install ffmpeg imagemagick
 
 require:
 	@echo
-
-provide:
-	@echo "output.gif"
 
 .PHONY: all install-tools require provide clean
