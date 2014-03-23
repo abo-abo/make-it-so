@@ -1,4 +1,4 @@
-;;; make-it-so.el --- Transform file with Makefile recipes. -*- lexical-binding: t -*-
+;;; make-it-so.el --- Transform files with Makefile recipes. -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2014 Oleh Krehel
 
@@ -75,6 +75,7 @@
 ;; ——— Requires ————————————————————————————————————————————————————————————————
 (require 'helm)
 (require 'dired)
+(require 'make-mode)
 
 ;; ——— Customization ———————————————————————————————————————————————————————————
 (defgroup make-it-so nil
@@ -87,13 +88,35 @@
   :type 'directory
   :group 'make-it-so)
 
+(defcustom mis-bindings-alist
+  '((mis-make-it-so . ",")
+    (mis-finalize . "C-,")
+    (mis-abort . "C-M-,")
+    (mis-dispatch . "C-.")
+    (mis-replace . "C-M-."))
+  "List of bindings for the minor mode."
+  :group 'make-it-so)
+
+(defcustom mis-make-command "make -j8"
+  "Customize the make command bound to `mis-make-key'.
+Option -j8 will allow up to 8 asynchronous processes to make the targets."
+  :group 'make-it-so)
+
+(defcustom mis-make-key "<f5>"
+  "`mis-make-command' will be bound to this key in `makefile-mode'."
+  :group 'make-it-so)
+
+;; ——— Setup ———————————————————————————————————————————————————————————————————
 (defvar mis-mode-map
   (make-sparse-keymap))
+
+(let ((map mis-mode-map))
+  (mapc (lambda (x) (define-key map (kbd (cdr x)) (car x)))
+        mis-bindings-alist))
 
 (defvar mis-source-files nil
   "Current set of files to transform.")
 
-;; ——— Interactive —————————————————————————————————————————————————————————————
 ;;;###autoload
 (define-minor-mode mis-mode
     "Add make-it-so key bindings to `dired'.
@@ -102,23 +125,19 @@
   :keymap mis-mode-map
   :group 'make-it-so)
 
-(defcustom mis-bindings-alist
-  '((mis-make-it-so . ",")
-    (mis-finalize . "C-,")
-    (mis-abort . "C-M-,")
-    (mis-dispatch . "C-.")
-    (mis-replace . "C-M-."))
-  "List of bindings for the minor mode.")
-
-(let ((map mis-mode-map))
-  (mapc (lambda (x) (define-key map (kbd (cdr x)) (car x)))
-        mis-bindings-alist))
-
 ;;;###autoload
 (defun mis-mode-on ()
   "Enable make-it-so bindings."
   (mis-mode 1))
 
+;;;###autoload
+(defun mis-config-default ()
+  "Easy config."
+  (add-hook 'dired-mode-hook 'mis-mode-on)
+  (when mis-make-key
+    (define-key makefile-mode-map (kbd mis-make-key) 'mis-save-and-compile)))
+
+;; ——— Interactive —————————————————————————————————————————————————————————————
 ;;;###autoload
 (defun mis-browse ()
   "List all available recipes.
@@ -139,7 +158,11 @@ Jump to the Makefile of the selected recipe."
 
 ;;;###autoload
 (defun mis-make-it-so ()
-  "When called from `dired', offer a list of transformations."
+  "When called from `dired', offer a list of transformations.
+Available trasformations are dispatched on currently selected
+file(s)' extension. Therefore it's an error when files with
+multiple extensions are marked.  After an action is selected,
+proceed to call `mis-action' for that action."
   (interactive)
   (if (mis-all-equal
        (mapcar
@@ -159,7 +182,7 @@ Jump to the Makefile of the selected recipe."
 ;;;###autoload
 (defun mis-abort ()
   "Abort tranformation.
-This function should revert to the state before `mis-make-it-so' was called."
+This function should revert to the state before `mis-action' was called."
   (interactive)
   (unless (file-exists-p "Makefile")
     (error "No Makefile in current directory"))
@@ -177,7 +200,10 @@ This function should revert to the state before `mis-make-it-so' was called."
 ;;;###autoload
 (defun mis-finalize ()
   "Finalize transformation.
-In addition to `mis-abort' copy over the files listed in \"provide\"."
+In addition to `mis-abort' copy over the files listed in
+\"provide\".  Each Makefile should append all essential files
+that it creates to a \"provide\" file. All generated files not in \"provide\"
+(intermediates and logs and such) will be deleted."
   (interactive)
   (unless (file-exists-p "Makefile")
     (error "No Makefile in current directory"))
@@ -189,7 +215,8 @@ In addition to `mis-abort' copy over the files listed in \"provide\"."
 
 ;;;###autoload
 (defun mis-replace ()
-  "Finalize transformation and move source files to trash."
+  "Finalize transformation.
+In addition to `mis-finalize' move source files to trash."
   (interactive)
   (let ((sources (read (mis-slurp "sources"))))
     (mis-finalize)
@@ -212,6 +239,15 @@ In addition to `mis-abort' copy over the files listed in \"provide\"."
                            x))
                         '(mis-finalize mis-abort mis-replace)))
           (action . (lambda (x) (call-interactively (car x)))))))
+
+;;;###autoload
+(defun mis-save-and-compile ()
+  "Save current buffer and call `compile' with `mis-make-command'.
+Switch to other window afterwards."
+  (interactive)
+  (save-buffer)
+  (compile mis-make-command)
+  (other-window 1))
 
 ;; ——— Utilities ———————————————————————————————————————————————————————————————
 (defun mis-directory-files (directory)
