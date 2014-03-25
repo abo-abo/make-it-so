@@ -2,7 +2,7 @@ from = 00:00:01
 to   = 00:00:23
 
 # ———  —————————————————————————————————————————————————————————————————————————
-INOGV = $(shell find . -maxdepth 1 -name '*.ogv' -type f | tr '\n' ' ')
+INOGV = $(shell find . -maxdepth 1 -name '*.ogv' -type f ! -name '*.out.ogv' | tr '\n' ' ')
 OUTOGV = $(INOGV:.ogv=.out.ogv)
 
 all: $(OUTOGV)
