@@ -1,4 +1,4 @@
-bitrate = 196k
+bitrate = 320k
 frequency = 48000
 channels = 2
 
