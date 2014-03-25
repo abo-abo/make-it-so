@@ -1,6 +1,5 @@
 FILEFORMAT = "`printf %02g $$TRACKNUMBER` - $$ARTIST - $$TITLE.flac"
-
-# ———  —————————————————————————————————————————————————————————————————————————
+# ______________________________________________________________________________
 remcontents = if [ -f $(1) ]; then cat $(1) | while read f; do rm -f "$$f";done;fi
 
 CUEFILE = $(shell dir *.cue)

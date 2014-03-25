@@ -12,7 +12,7 @@ from `dired` dispatching on selected files' extension.
 ### Long story
 
 I'm sure you've encountered your share of "How do I transform X to
-Y?"-type questions on the web. I know I did. A lot of answers involve
+Y?"-type questions on the web. I know I have. A lot of answers involve
 using kitchen-sink tools like `ffmpeg` or `convert`. These tools are
 great: they can transform almost anything into anything else.  But
 they come with a price of a gazillion switches that are hard to
@@ -119,7 +119,7 @@ above three commands by name and remind you their shortcuts.
 5. ogv-to-gif
 6. svg-to-png
 
-## The workflow for using existing recipes
+## The workflow for adding new recipes
 
 As a sample scenario, assume you want to convert *.svg to *.png.
 
@@ -181,8 +181,11 @@ Makefile will be saved for all future calls to `make-it-so`.
 
 - Remember to use `dired-jump` command to jump from any file (or even
   the compilation buffer) to the associated directory.
+- Remember `dired-mark-files-regexp` (bound to Shift 85) that will mark all files
+  of specific type in directory. This is much faster than **m** when you want
+  to convert a bunch of files.
 - Until you're sure that the command and the Makefile work properly
-  make backups.
+  make backups. In fact, make backups period.
 
 ## Contributing
 
