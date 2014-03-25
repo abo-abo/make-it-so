@@ -45,7 +45,7 @@
 ;;
 ;; Case 3: you have a Makefile recipe.  Just navigate to the dispatch
 ;; file (*.cue in this case) with `dired' and press "," which is bound
-;; to `mis-make-it-so'.  You'll be prompted to select a transformation
+;; to `make-it-so'.  You'll be prompted to select a transformation
 ;; recipe that applies to *.cue files.  Select "split".  The following
 ;; steps are:
 ;;
@@ -89,7 +89,7 @@
   :group 'make-it-so)
 
 (defcustom mis-bindings-alist
-  '((mis-make-it-so . ",")
+  '((make-it-so . ",")
     (mis-finalize . "C-,")
     (mis-abort . "C-M-,")
     (mis-dispatch . "C-.")
@@ -114,7 +114,7 @@ Option -j8 will allow up to 8 asynchronous processes to make the targets."
   (mapc (lambda (x) (define-key map (kbd (cdr x)) (car x)))
         mis-bindings-alist))
 
-(defvar mis-source-files nil
+(defvar mis-current-files nil
   "Current set of files to transform.")
 
 ;;;###autoload
@@ -156,27 +156,70 @@ Jump to the Makefile of the selected recipe."
                             "Makefile"))
                         (error "Failed to split %s" x)))))))
 
+(defun mis-create-makefile (action)
+  (let* ((olde (file-name-extension (car mis-current-files)))
+         (newe (if (string-match "^to-\\(.*\\)" action)
+                   (match-string 1 action)
+                 (concat "out." olde)))
+         (preamble (concat "# This is a template for the Makefile.\n"
+                           "# Parameters should go in the upper half as:\n"
+                           "#     width = 200\n"
+                           "# and be referenced in the command as $(width)\n\n"
+                           "# " (make-string 78 ?_)))
+         (olds (format "DIR%s = $(shell dir *.%s)" (upcase olde) olde))
+         (news (format "DIR%s = $(DIR%s:.%s=.%s)"
+                       (upcase newe) (upcase olde) olde newe))
+         (t-all (format "all: clean Makefile $(DIR%s)" (upcase newe)))
+         (t-new (concat
+                 (format "%%.%s: %%.%s\n\techo \"add command here\"" newe olde)
+                 "\n\techo $@ >> provide"))
+         (t-clean (format "clean:\n\trm -f *.%s provide" newe))
+         (t-tools (concat
+                   "# Insert the install command here.\n"
+                   "# e.g. sudo apt-get install ffmpeg\n"
+                   "install-tools:\n\t"
+                   "echo \"No tools required\""))
+         (t-req (concat
+                 "# Use this target when one file requires another.\n"
+                 "# See \"../../cue/split/Makefile\" for an example.\n"
+                 "require:\n\t@echo"))
+         (t-phony ".PHONY: all install-tools require clean")
+         (Makefile (mapconcat 'identity
+                              (list preamble olds news t-all t-new
+                                    t-clean t-tools t-req t-phony)
+                              "\n\n")))
+    (mis-spit Makefile
+              (mis-build-path-create
+               mis-recipes-directory
+               olde
+               action
+               "Makefile"))))
+
 ;;;###autoload
-(defun mis-make-it-so ()
+(defun make-it-so ()
   "When called from `dired', offer a list of transformations.
 Available trasformations are dispatched on currently selected
 file(s)' extension. Therefore it's an error when files with
 multiple extensions are marked.  After an action is selected,
 proceed to call `mis-action' for that action."
   (interactive)
+  (unless (eq major-mode 'dired-mode)
+    (error "Must be called from dired"))
   (if (mis-all-equal
        (mapcar
         #'file-name-extension
-        (setq mis-source-files
+        (setq mis-current-files
               (dired-get-marked-files nil current-prefix-arg))))
-      (let* ((ext (file-name-extension (car mis-source-files)))
-             (candidates (mis-recipes-by-ext ext)))
-        (if candidates
-            (helm :sources
-                  `((name . "Tools")
-                    (candidates . ,candidates)
-                    (action . mis-action)))
-          (error "No candidates for *.%s" ext)))
+      (let* ((ext (file-name-extension (car mis-current-files)))
+             (candidates (mis-recipes-by-ext ext))
+             (source1 `((name . "Makefiles")
+                        (candidates . ,candidates)
+                        (action . mis-action)))
+             (source2 `((name . "Create Makefile")
+                        (dummy)
+                        (action . mis-action))))
+        (helm :sources
+              (list source1 source2)))
     (error "Mixed extensions in selection")))
 
 ;;;###autoload
@@ -246,8 +289,7 @@ In addition to `mis-finalize' move source files to trash."
 Switch to other window afterwards."
   (interactive)
   (save-buffer)
-  (compile mis-make-command)
-  (other-window 1))
+  (compile mis-make-command))
 
 ;; ——— Utilities ———————————————————————————————————————————————————————————————
 (defun mis-directory-files (directory)
@@ -273,6 +315,18 @@ Switch to other window afterwards."
   "Build a path from LST."
   (cl-reduce (lambda (a b) (expand-file-name b a)) lst))
 
+(defun mis-build-path-create (&rest lst)
+  "Build a path from LST. Create intermediate directories."
+  (expand-file-name
+   (car (last lst))
+   (cl-reduce
+    (lambda (a b)
+      (let ((dir (expand-file-name b a)))
+        (unless (file-exists-p dir)
+          (make-directory dir))
+        dir))
+    (butlast lst 1))))
+
 (defun mis-slurp (file)
   "Return contents of FILE."
   (if (file-exists-p file)
@@ -296,7 +350,7 @@ Switch to other window afterwards."
 
 (defun mis-action (x)
   "Make it so for recipe X."
-  (let* ((sources mis-source-files)
+  (let* ((sources mis-current-files)
          (source (file-name-nondirectory (car sources)))
          (ext (file-name-extension source))
          (basedir (or (file-name-directory source)
@@ -307,23 +361,30 @@ Switch to other window afterwards."
          (makefile-template
           (mis-build-path mis-recipes-directory ext x "Makefile"))
          (makefile (expand-file-name "Makefile" basedir)))
-    (unless (file-exists-p makefile-template)
-      (error "File not found %s" makefile-template))
-    (copy-file makefile-template makefile)
-    (let ((requires (shell-command-to-string "make require")))
-      (if (string-match "make:" requires)
-          (error "Makefile must have a \"require\" target")
-        (mkdir dir)
-        (rename-file "Makefile" dir)
-        (setq sources (append sources
-                              (mapcar 'expand-file-name
-                                      (split-string requires "\n" t))))
-        (let ((targets (mapcar (lambda (x) (mis-rename-quote x dir))
-                               sources)))
-          (mis-spit (prin1-to-string sources)
-                    (expand-file-name "sources" dir))
-          (mis-spit (prin1-to-string targets)
-                    (expand-file-name "targets" dir)))))
+    ;; If a recipe exists, copy it.
+    ;; Otherwise create a new one, move it here and mark it to be
+    ;; restored to the proper location.
+    (if (file-exists-p makefile-template)
+        (copy-file makefile-template makefile)
+      (mis-create-makefile x)
+      (push makefile-template sources))
+    (if (file-exists-p "Makefile")
+        (let ((requires (shell-command-to-string "make require")))
+          (if (string-match "make:" requires)
+              (error "Makefile must have a \"require\" target")
+            (mkdir dir)
+            (rename-file "Makefile" dir)
+            (setq sources
+                  (append sources
+                          (mapcar 'expand-file-name
+                                  (split-string requires "\n" t))))))
+      (mkdir dir))
+    (let ((targets (mapcar (lambda (x) (mis-rename-quote x dir))
+                           sources)))
+      (mis-spit (prin1-to-string sources)
+                (expand-file-name "sources" dir))
+      (mis-spit (prin1-to-string targets)
+                (expand-file-name "targets" dir)))
     (find-file (expand-file-name "Makefile" dir))))
 
 (defun mis-delete-file (file)
