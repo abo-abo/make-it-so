@@ -21,4 +21,4 @@ install-tools:
 require:
 	@echo
 
-.PHONY: all install-tools require provide clean
+.PHONY: all install-tools require clean
