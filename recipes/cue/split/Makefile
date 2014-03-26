@@ -12,7 +12,7 @@ split: $(CUEFILE)
 	cuetag "$(CUEFILE)" split-track*.flac
 	ls split-track*.flac > $@
 
-provide: Makefile
+provide: split Makefile
 	rm -f $@
 	cat split | while read a; do \
 	    ARTIST=`metaflac "$$a" --show-tag=ARTIST | sed s/.*=//g`; \
@@ -26,6 +26,7 @@ provide: Makefile
 clean:
 	if [ -f output ]; then $(call remcontents,output);rm -f output split;fi
 	if [ -f split ]; then $(call remcontents,split);rm -f split;fi
+	rm -f provide
 
 install-tools:
 	sudo apt-get install cuetools shntool flac wavpack
