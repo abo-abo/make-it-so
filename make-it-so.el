@@ -229,16 +229,18 @@ This function should revert to the state before `mis-action' was called."
   (interactive)
   (unless (file-exists-p "Makefile")
     (error "No Makefile in current directory"))
-  (let ((makefile-buffer (find-buffer-visiting (expand-file-name "Makefile"))))
-    (when makefile-buffer
-      (kill-buffer makefile-buffer)))
-  (let ((targets (read (mis-slurp "targets")))
+  (let ((makefile-buffer (find-buffer-visiting (expand-file-name "Makefile")))
+        (dired-buffer (current-buffer))
+        (dir default-directory)
+        (targets (read (mis-slurp "targets")))
         (sources (read (mis-slurp "sources"))))
-    (cl-mapcar 'rename-file targets sources))
-  (let ((dir default-directory))
+    (when makefile-buffer
+      (kill-buffer makefile-buffer))
+    (cl-mapcar 'rename-file targets sources)
     (dired "..")
-    (delete-directory dir t))
-  (revert-buffer))
+    (kill-buffer dired-buffer)
+    (delete-directory dir t)
+    (revert-buffer)))
 
 ;;;###autoload
 (defun mis-finalize ()
