@@ -28,21 +28,21 @@ doesn't exist.
 ### Advantages
 
 1. You write the command only once. All the other times, you just
-   customize literate switches.
+   customize the literate switches.
 
 2. It's possible to not have to write the command at all if it's
    available in the repository.
 
 3. Since the command is meant to be written just once, you can have a
-   much more complex and optimized command, compared to the one that
-   you would normally enter in the terminal.
+   more complex and optimized command, compared to the one that you
+   would normally enter in the terminal.
 
-4. In case of multiple files, `make` allows to use parallel processors
+4. In case of multiple files, `make` allows to use multiple cores
    without the actual command knowing about it. This means that people
-   with different processors can use the same Makefile to the most efficiency,
-   calling `make -j8` or `make -j2` where appropriate.
+   with different processors can use the same Makefile to the most
+   efficiency, calling `make -j8` or `make -j2` where appropriate.
 
-5. The ELisp layer of this package solves the problem of Makefiles
+5. The Elisp layer of this package solves the problem of Makefiles
    and file names with spaces.
 
 ## Installation
@@ -109,6 +109,10 @@ those registered by the Makefile in "provide" file.
 
 There's also *mis-dispatch* (bound to **C-.**) that allows to call the
 above three commands by name and remind you their shortcuts.
+
+### Screencast for transforming *.svg to *.png
+
+![gif][svg-png]
 
 ## Available recipes
 
@@ -196,3 +200,4 @@ moment.  So new Makefile contributions are most welcome.
 [trim-makefile]: https://raw.githubusercontent.com/abo-abo/make-it-so/master/recipes/ogv/trim/Makefile
 [to-png-makefile]: https://raw.githubusercontent.com/abo-abo/make-it-so/master/recipes/svg/to-png/Makefile
 [stack]: http://stackoverflow.com/questions/9853325/how-to-convert-a-svg-to-a-png-with-image-magick
+[svg-png]: https://raw.githubusercontent.com/abo-abo/make-it-so/gh-pages/svg-png.gif
