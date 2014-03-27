@@ -6,7 +6,7 @@
 
 ### Terse description
 
-Curry command line tools with Makefiles and select Makefiles to call
+Curry command line tools with Makefiles and select a Makefile to call
 from `dired` dispatching on selected files' extension.
 
 ### Long story
@@ -89,7 +89,7 @@ The actual command called will be:
 but this complexity is distanced from you, and you can just select
 `from` and `to` if you want.
 
-Next you call `mis-save-and-compile` (bound to "f5" for `make-mode`)
+Next you call `mis-save-and-compile` (bound to **f5** for `make-mode`)
 and test your result.
 
 After this you can:
@@ -122,6 +122,7 @@ above three commands by name and remind you their shortcuts.
 4. ogv-crop
 5. ogv-to-gif
 6. svg-to-png
+7. md-to-html
 
 ## The workflow for adding new recipes
 
@@ -166,6 +167,9 @@ The "to-" prefix signifies that this is a conversion, adapting the Makefile to t
         	@echo
 
         .PHONY: all install-tools require clean
+
+If the action name doesn't have a "to-" prefix, the transformation is assumed to be
+e.g. "svg" -> "out.svg". You can change this of course by editing the Makefile.
 
 3. In case the command name and package name don't coincide, or the
 command needs additional packages in order to work you might want to
