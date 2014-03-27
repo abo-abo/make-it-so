@@ -75,6 +75,7 @@
 
 ;; ——— Requires ————————————————————————————————————————————————————————————————
 (require 'helm)
+(require 'helm-help)
 (require 'dired)
 (require 'make-mode)
 (require 'cl-lib)
@@ -373,7 +374,7 @@ Switch to other window afterwards."
       (mis-create-makefile x)
       (push makefile-template sources))
     (if (file-exists-p "Makefile")
-        (let ((requires (shell-command-to-string "make require")))
+        (let ((requires (shell-command-to-string "make -s require")))
           (if (string-match "make:" requires)
               (error "Makefile must have a \"require\" target")
             (mkdir dir)
