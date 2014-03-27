@@ -77,6 +77,7 @@
 (require 'helm)
 (require 'dired)
 (require 'make-mode)
+(require 'cl-lib)
 
 ;; ——— Customization ———————————————————————————————————————————————————————————
 (defgroup make-it-so nil
