@@ -5,7 +5,7 @@
 ;; Author: Oleh Krehel <ohwoeowho@gmail.com>
 ;; URL: https://github.com/abo-abo/make-it-so
 ;; Version: 0.1.0
-;; Package-Requires: ((helm "1.5.3"))
+;; Package-Requires: ((helm "1.5.3") (emacs "24"))
 ;; Keywords: make, dired
 
 ;; This file is not part of GNU Emacs
