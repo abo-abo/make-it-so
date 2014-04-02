@@ -153,7 +153,7 @@ Jump to the Makefile of the selected recipe."
                       (if (string-match "^\\([^-]+\\)-\\(.*\\)$" x)
                           (find-file
                            (mis-build-path
-                            mis-recipes-directory
+                            (mis-directory)
                             (match-string 1 x)
                             (match-string 2 x)
                             "Makefile"))
@@ -193,7 +193,7 @@ Jump to the Makefile of the selected recipe."
                               "\n\n")))
     (mis-spit Makefile
               (mis-build-path-create
-               mis-recipes-directory
+               (mis-directory)
                olde
                action
                "Makefile"))))
@@ -305,11 +305,11 @@ Switch to other window afterwards."
 (defun mis-recipes-by-ext (ext)
   "Return a list of recipes available for EXT."
   (mis-directory-files
-   (expand-file-name ext mis-recipes-directory)))
+   (expand-file-name ext (mis-directory))))
 
 (defun mis-recipes ()
   "Return a list of current recipes."
-  (let ((formats (mis-directory-files mis-recipes-directory)))
+  (let ((formats (mis-directory-files (mis-directory))))
     (apply #'append
            (cl-loop for f in formats
                     collect
@@ -364,7 +364,7 @@ Switch to other window afterwards."
                (format "%s:%s" x (file-name-nondirectory source))
                basedir))
          (makefile-template
-          (mis-build-path mis-recipes-directory ext x "Makefile"))
+          (mis-build-path (mis-directory) ext x "Makefile"))
          (makefile (expand-file-name "Makefile" basedir)))
     ;; If a recipe exists, copy it.
     ;; Otherwise create a new one, move it here and mark it to be
@@ -412,6 +412,18 @@ Switch to other window afterwards."
                dir)))
     (rename-file file dest)
     dest))
+
+(defun mis-directory ()
+  "A getter for `mis-recipes-directory'."
+  (if (file-exists-p mis-recipes-directory)
+      mis-recipes-directory
+    ;; look for recipes in package directory
+    (let* ((default-directory package-user-dir)
+           (dirs (file-expand-wildcards "*make-it-so*")))
+      (if (= 1 (length dirs))
+          (setq mis-recipes-directory
+                (mis-build-path (car dirs) "recipes"))
+        (error "Not one make-it-so in package dir")))))
 
 (provide 'make-it-so)
 

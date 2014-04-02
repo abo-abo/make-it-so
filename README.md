@@ -47,6 +47,8 @@ doesn't exist.
 
 ## Installation
 
+### From here:
+
 Clone this repository:
 
     $ cd ~/git/
@@ -59,6 +61,20 @@ Add to `.emacs`:
     (setq mis-recipes-directory "~/git/make-it-so/recipes/")
     (mis-config-default)
 
+This method means that any Makefile that you create will be under
+version control.
+
+### From MELPA:
+
+If you install from MELPA, you only need this:
+
+    (mis-config-default)
+
+However beware that your recipes will be in your `package-user-dir`
+and will be **wiped** when you update the package.  Which is fine if
+you just want to give it a quick go or don't plan on creating your own
+recipes. But if you do, move your recipes directory to a different place
+and configure `mis-recipes-directory` properly.
 
 ## The workflow for using existing recipes
 
