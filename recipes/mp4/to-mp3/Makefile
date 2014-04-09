@@ -13,7 +13,7 @@ clean:
 	rm -f *.mp3 provide
 
 install-tools:
-	sudo apt-get install avconv
+	sudo apt-get install libav-tools libavcodec-extra-53
 
 require:
 	@echo
