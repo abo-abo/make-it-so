@@ -1,19 +1,14 @@
-# This is a template for the Makefile.
-# Parameters should go in the upper half as:
-#     width = 200
-# and be referenced in the command as $(width)
+# ——— parameters ———————————————————————————————————————————————————————————————
 
-# ______________________________________________________________________________
-
+# ——— implementation ———————————————————————————————————————————————————————————
 DIRMD = $(shell dir *.md)
-
 DIRHTML = $(DIRMD:.md=.html)
 
 all: clean Makefile $(DIRHTML)
 
 %.html: %.md
-	pandoc -o $@ $^
-	echo $@ >> provide
+	pandoc -o "$@" "$^"
+	echo "$@" >> provide
 
 clean:
 	rm -f *.html provide
