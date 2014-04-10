@@ -139,6 +139,7 @@ above three commands by name and remind you their shortcuts.
 5. ogv-to-gif
 6. svg-to-png
 7. md-to-html
+8. mp4-to-mp3
 
 ## The workflow for adding new recipes
 
