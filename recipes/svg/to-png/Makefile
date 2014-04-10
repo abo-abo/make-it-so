@@ -1,8 +1,8 @@
+# ——— parameters ———————————————————————————————————————————————————————————————
 width = 320
 height = 320
 
-# ______________________________________________________________________________
-
+# ——— implementation ———————————————————————————————————————————————————————————
 DIRSVG = $(shell dir *.svg)
 
 DIRPNG = $(DIRSVG:.svg=.png)
@@ -10,8 +10,8 @@ DIRPNG = $(DIRSVG:.svg=.png)
 all: clean Makefile $(DIRPNG)
 
 %.png: %.svg
-	inkscape -z -e $@ -w $(width) -h $(height) $^
-	echo $@ >> provide
+	inkscape -z -e "$@" -w $(width) -h $(height) "$^"
+	echo "$@" >> provide
 
 clean:
 	rm -f *.png provide
