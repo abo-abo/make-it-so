@@ -26,7 +26,7 @@
 ;;; Commentary:
 ;;
 ;; This package is aimed on minimizing the effort of interacting with
-;; the command tools involved in trasforming files.
+;; the command tools involved in transforming files.
 ;;
 ;; For instance, once in a blue moon you might need to transform a
 ;; large flac file based on a cue file into smaller flac files, or mp3
@@ -50,25 +50,27 @@
 ;; recipe that applies to *.cue files.  Select "split".  The following
 ;; steps are:
 ;;
-;;   1. A special directory will be created in place of the input
+;;   1. A staging directory will be created in place of the input
 ;;   files and they will be moved there.
 ;;
-;;   2. Your selected Makefile template will be copied to the special
-;;   dir and opened for you to tweak the parameters.
+;;   2. Your selected Makefile template will be copied to the staging
+;;   directory and opened for you to tweak the parameters.
 ;;
 ;;   3. When you're done, call `compile' to make the transformation.
+;;   It's bound to [f5] in `make-mode' by this package.
 ;;
 ;;   4. If you want to cancel at this point, discarding the results of
 ;;   the transformation (which is completely safe, since they can be
-;;   regenerated), call `mis-abort'.
+;;   regenerated), call `mis-abort', bound to "C-M-,".
 ;;
 ;;   5. If you want to keep both the input and output files, call
-;;   `mis-finalize'
+;;   `mis-finalize', bound to "C-,".
 ;;
-;;   6. If you want to keep only the output files, call `mis-replace'.
+;;   6. If you want to keep only the output files, call `mis-replace',
+;;   bound to "C-M-.". The original files will be moved to trash.
 ;;
-;;   7. Finally, consider contributing Makefile recipies to allow
-;;   other users to skip step 1.
+;;   7. Finally, consider contributing Makefile recipes to allow
+;;   other users to skip Case 1 and Case 2.
 ;;
 
 ;;; Code:
