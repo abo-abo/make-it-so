@@ -191,6 +191,9 @@ e.g. "svg" -> "out.svg". You can change this of course by editing the Makefile.
 3. In case the command name and package name don't coincide, or the
 command needs additional packages in order to work you might want to
 change `echo "No tools required"` to `sudo apt-get install inkscape`.
+This should serve as a reminder of what you should install when you're
+on a new system in order for the Makefile to work. And you can call `make install-tools`
+to install them of course.
 
 4. Replace `echo "add command here"` with `inkscape -z -e $@ -w $(width) -h $(height) $^`.
 The parameters `width` and `height` will go to the top of the Makefile, where they
