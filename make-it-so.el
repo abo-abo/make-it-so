@@ -332,6 +332,7 @@ Switch to other window afterwards."
 
 (defun mis-recipes-by-ext (ext)
   "Return a list of recipes available for EXT."
+  (setq ext (or ext "nil"))
   (mis-directory-files
    (expand-file-name ext (mis-directory))))
 
