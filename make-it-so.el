@@ -208,8 +208,29 @@ file(s)' extension. Therefore it's an error when files with
 multiple extensions are marked.  After an action is selected,
 proceed to call `mis-action' for that action."
   (interactive)
-  (unless (eq major-mode 'dired-mode)
-    (error "Must be called from dired"))
+  (cl-case major-mode
+    (wdired-mode
+     (call-interactively 'self-insert-command))
+    (dired-mode
+     (if (mis-all-equal
+          (mapcar
+           #'file-name-extension
+           (setq mis-current-files
+                 (dired-get-marked-files nil current-prefix-arg))))
+         (let* ((ext (file-name-extension (car mis-current-files)))
+                (candidates (mis-recipes-by-ext ext))
+                (source1 `((name . "Makefiles")
+                           (candidates . ,candidates)
+                           (action . mis-action)))
+                (source2 `((name . "Create Makefile")
+                           (dummy)
+                           (action . mis-action))))
+           (helm :sources
+                 (list source1 source2)))
+       (error "Mixed extensions in selection")))
+    (t
+     (error "Must be called from dired"))))
+
   (if (mis-all-equal
        (mapcar
         #'file-name-extension
