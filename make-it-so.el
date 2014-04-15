@@ -67,7 +67,7 @@
 ;;   `mis-finalize', bound to "C-,".
 ;;
 ;;   6. If you want to keep only the output files, call `mis-replace',
-;;   bound to "C-M-.". The original files will be moved to trash.
+;;   bound to "C-M-.".  The original files will be moved to trash.
 ;;
 ;;   7. Finally, consider contributing Makefile recipes to allow
 ;;   other users to skip Case 1 and Case 2.
@@ -111,6 +111,13 @@ Option -j8 will allow up to 8 asynchronous processes to make the targets."
   "`mis-make-command' will be bound to this key in `makefile-mode'."
   :group 'make-it-so)
 
+(defcustom mis-select-method 'helm
+  "Method to select an action from a list of actions."
+  :group 'make-it-so
+  :type '(choice
+	  (const :tag "helm" helm)
+	  (const :tag "ido" ido)))
+
 ;; ——— Setup ———————————————————————————————————————————————————————————————————
 (defvar mis-mode-map
   (make-sparse-keymap))
@@ -132,7 +139,7 @@ Option -j8 will allow up to 8 asynchronous processes to make the targets."
 
 ;;;###autoload
 (defun mis-mode-on ()
-  "Enable make-it-so bindings."
+  "Enable `make-it-so' bindings."
   (mis-mode 1))
 
 ;;;###autoload
@@ -162,6 +169,7 @@ Jump to the Makefile of the selected recipe."
                         (error "Failed to split %s" x)))))))
 
 (defun mis-create-makefile (action)
+  "Create a new Makefile for ACTION."
   (let* ((olde (file-name-extension (car mis-current-files)))
          (newe (if (string-match "^to-\\(.*\\)" action)
                    (match-string 1 action)
@@ -204,7 +212,7 @@ Jump to the Makefile of the selected recipe."
 (defun make-it-so ()
   "When called from `dired', offer a list of transformations.
 Available trasformations are dispatched on currently selected
-file(s)' extension. Therefore it's an error when files with
+file(s)' extension.  Therefore it's an error when files with
 multiple extensions are marked.  After an action is selected,
 proceed to call `mis-action' for that action."
   (interactive)
@@ -217,36 +225,33 @@ proceed to call `mis-action' for that action."
            #'file-name-extension
            (setq mis-current-files
                  (dired-get-marked-files nil current-prefix-arg))))
-         (let* ((ext (file-name-extension (car mis-current-files)))
-                (candidates (mis-recipes-by-ext ext))
-                (source1 `((name . "Makefiles")
-                           (candidates . ,candidates)
-                           (action . mis-action)))
-                (source2 `((name . "Create Makefile")
-                           (dummy)
-                           (action . mis-action))))
-           (helm :sources
-                 (list source1 source2)))
+         (if (eq mis-select-method 'helm)
+             (mis--helm)
+           (mis--ido))
        (error "Mixed extensions in selection")))
     (t
      (error "Must be called from dired"))))
 
-  (if (mis-all-equal
-       (mapcar
-        #'file-name-extension
-        (setq mis-current-files
-              (dired-get-marked-files nil current-prefix-arg))))
-      (let* ((ext (file-name-extension (car mis-current-files)))
-             (candidates (mis-recipes-by-ext ext))
-             (source1 `((name . "Makefiles")
-                        (candidates . ,candidates)
-                        (action . mis-action)))
-             (source2 `((name . "Create Makefile")
-                        (dummy)
-                        (action . mis-action))))
-        (helm :sources
-              (list source1 source2)))
-    (error "Mixed extensions in selection")))
+(defun mis--helm ()
+  "Select an action with helm.
+Also allow to create a new action."
+  (let* ((ext (file-name-extension (car mis-current-files)))
+         (candidates (mis-recipes-by-ext ext))
+         (source1 `((name . "Makefiles")
+                    (candidates . ,candidates)
+                    (action . mis-action)))
+         (source2 `((name . "Create Makefile")
+                    (dummy)
+                    (action . mis-action))))
+    (helm :sources
+          (list source1 source2))))
+
+(defun mis--ido ()
+  "Select an action with ido."
+  (let* ((ext (file-name-extension (car mis-current-files)))
+         (candidates (mis-recipes-by-ext ext))
+         (action (ido-completing-read "Action: " candidates)))
+    (mis-action action)))
 
 ;;;###autoload
 (defun mis-abort ()
@@ -273,8 +278,8 @@ This function should revert to the state before `mis-action' was called."
   "Finalize transformation.
 In addition to `mis-abort' copy over the files listed in
 \"provide\".  Each Makefile should append all essential files
-that it creates to a \"provide\" file. All generated files not in \"provide\"
-(intermediates and logs and such) will be deleted."
+that it creates to a \"provide\" file.  All generated files not in \"provide\",
+i.e. intermediates and logs and such, will be deleted."
   (interactive)
   (unless (file-exists-p "Makefile")
     (error "No Makefile in current directory"))
@@ -344,7 +349,7 @@ Switch to other window afterwards."
   (cl-reduce (lambda (a b) (expand-file-name b a)) lst))
 
 (defun mis-build-path-create (&rest lst)
-  "Build a path from LST. Create intermediate directories."
+  "Build a path from LST.  Create intermediate directories."
   (expand-file-name
    (car (last lst))
    (cl-reduce
