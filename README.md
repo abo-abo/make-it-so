@@ -140,6 +140,9 @@ above three commands by name and remind you their shortcuts.
 6. svg-to-png
 7. md-to-html
 8. mp4-to-mp3
+9. m4a-to-mp3
+9. chm-to-pdf
+10. pdf-to-txt
 
 ## The workflow for adding new recipes
 
