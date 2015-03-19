@@ -10,7 +10,7 @@ all: $(OUTOGV)
 
 %.out.ogv: %.ogv Makefile
 	rm -f "$@"
-	ffmpeg -i $< -ss $(from) -t $(to) -c copy "$@"
+	ffmpeg -i $< -ss $(from) -t $(to) -vcodec copy -acodec copy "$@"
 	echo "$@" >> provide
 
 clean:
