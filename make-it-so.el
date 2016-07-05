@@ -5,7 +5,7 @@
 ;; Author: Oleh Krehel <ohwoeowho@gmail.com>
 ;; URL: https://github.com/abo-abo/make-it-so
 ;; Version: 0.1.0
-;; Package-Requires: ((helm "1.5.3") (emacs "24"))
+;; Package-Requires: ((swiper "0.8.0") (emacs "24"))
 ;; Keywords: make, dired
 
 ;; This file is not part of GNU Emacs
@@ -75,18 +75,22 @@
 
 ;;; Code:
 
-;; ——— Requires ————————————————————————————————————————————————————————————————
-(require 'helm)
-(require 'helm-help)
+;;* Requires
 (require 'dired)
 (require 'make-mode)
 (require 'cl-lib)
 
-;; ——— Customization ———————————————————————————————————————————————————————————
+;;* Customization
 (defgroup make-it-so nil
   "Transfrom files in `dired' with Makefile recipes."
   :group 'dired
   :prefix "mis-")
+
+(defcustom mis-completion-method 'ivy
+  "Method to select a candidate from a list of strings."
+  :type '(choice
+          (const :tag "Ivy" ivy)
+          (const :tag "Helm" helm)))
 
 (defcustom mis-recipes-directory "~/git/make-it-so/recipes/"
   "Directory with available recipes."
@@ -111,14 +115,7 @@ Option -j8 will allow up to 8 asynchronous processes to make the targets."
   "`mis-make-command' will be bound to this key in `makefile-mode'."
   :group 'make-it-so)
 
-(defcustom mis-select-method 'helm
-  "Method to select an action from a list of actions."
-  :group 'make-it-so
-  :type '(choice
-	  (const :tag "helm" helm)
-	  (const :tag "ido" ido)))
-
-;; ——— Setup ———————————————————————————————————————————————————————————————————
+;;* Setup
 (defvar mis-mode-map
   (make-sparse-keymap))
 
@@ -149,24 +146,37 @@ Option -j8 will allow up to 8 asynchronous processes to make the targets."
   (when mis-make-key
     (define-key makefile-mode-map (kbd mis-make-key) 'mis-save-and-compile)))
 
-;; ——— Interactive —————————————————————————————————————————————————————————————
+(defun mis-competing-read (prompt collection action)
+  (if (eq mis-completion-method 'helm)
+      (progn
+        (require 'helm)
+        (require 'helm-help)
+        (helm :sources
+              `((name . ,prompt)
+                (candidates . ,collection)
+                (action . ,action))))
+    (require 'ivy)
+    (ivy-read prompt collection
+              :action action)))
+
+;;* Interactive
 ;;;###autoload
 (defun mis-browse ()
   "List all available recipes.
 Jump to the Makefile of the selected recipe."
   (interactive)
-  (helm :sources
-        `((name . "Recipes")
-          (candidates . mis-recipes)
-          (action . (lambda (x)
-                      (if (string-match "^\\([^-]+\\)-\\(.*\\)$" x)
-                          (find-file
-                           (mis-build-path
-                            (mis-directory)
-                            (match-string 1 x)
-                            (match-string 2 x)
-                            "Makefile"))
-                        (error "Failed to split %s" x)))))))
+  (mis-competing-read
+   "Recipes"
+   (mis-recipes)
+   (lambda (x)
+     (if (string-match "^\\([^-]+\\)-\\(.*\\)$" x)
+         (find-file
+          (mis-build-path
+           (mis-directory)
+           (match-string 1 x)
+           (match-string 2 x)
+           "Makefile"))
+       (error "Failed to split %s" x)))))
 
 (defun mis-create-makefile (action)
   "Create a new Makefile for ACTION."
@@ -225,33 +235,13 @@ proceed to call `mis-action' for that action."
            #'file-name-extension
            (setq mis-current-files
                  (dired-get-marked-files nil current-prefix-arg))))
-         (if (eq mis-select-method 'helm)
-             (mis--helm)
-           (mis--ido))
+         (let* ((ext (file-name-extension (car mis-current-files)))
+                (candidates (mis-recipes-by-ext ext)))
+           (mis-competing-read
+            "Makefile: " candidates 'mis-action))
        (error "Mixed extensions in selection")))
     (t
      (error "Must be called from dired"))))
-
-(defun mis--helm ()
-  "Select an action with helm.
-Also allow to create a new action."
-  (let* ((ext (file-name-extension (car mis-current-files)))
-         (candidates (mis-recipes-by-ext ext))
-         (source1 `((name . "Makefiles")
-                    (candidates . ,candidates)
-                    (action . mis-action)))
-         (source2 `((name . "Create Makefile")
-                    (dummy)
-                    (action . mis-action))))
-    (helm :sources
-          (list source1 source2))))
-
-(defun mis--ido ()
-  "Select an action with ido."
-  (let* ((ext (file-name-extension (car mis-current-files)))
-         (candidates (mis-recipes-by-ext ext))
-         (action (ido-completing-read "Action: " candidates)))
-    (mis-action action)))
 
 ;;;###autoload
 (defun mis-abort ()
@@ -301,20 +291,19 @@ In addition to `mis-finalize' move source files to trash."
 
 ;;;###autoload
 (defun mis-dispatch ()
-  "Choose \"mis-\" via `helm'."
+  "Choose \"mis-\" via completion."
   (interactive)
-  (helm :sources
-        `((name . "Actions")
-          (candidates .
-                      ,(mapcar
-                        (lambda (x)
-                          (list
-                           (format "% -30s%s" x
-                                   (or (cdr (assoc x mis-bindings-alist))
-                                       "not bound"))
-                           x))
-                        '(mis-finalize mis-abort mis-replace)))
-          (action . (lambda (x) (call-interactively (car x)))))))
+  (mis-competing-read
+   "Action: "
+   (mapcar
+    (lambda (x)
+      (list
+       (format "% -30s%s" x
+               (or (cdr (assoc x mis-bindings-alist))
+                   "not bound"))
+       x))
+    '(mis-finalize mis-abort mis-replace))
+   (lambda (x) (call-interactively (car x)))))
 
 ;;;###autoload
 (defun mis-save-and-compile ()
@@ -324,7 +313,7 @@ Switch to other window afterwards."
   (save-buffer)
   (compile mis-make-command))
 
-;; ——— Utilities ———————————————————————————————————————————————————————————————
+;;* Utilities
 (defun mis-directory-files (directory)
   "Return results of (`directory-files' DIRECTORY) without \".\" and \"..\"."
   (and (file-exists-p directory)
@@ -455,9 +444,5 @@ Switch to other window afterwards."
         (error "Not one make-it-so in package dir")))))
 
 (provide 'make-it-so)
-
-;;; Local Variables:
-;;; outline-regexp: ";; ———"
-;;; End:
 
 ;;; make-it-so.el ends here
