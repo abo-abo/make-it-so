@@ -379,7 +379,7 @@ Switch to other window afterwards."
          (basedir (or (file-name-directory source)
                       default-directory))
          (dir (expand-file-name
-               (format "%s:%s" x (file-name-nondirectory source))
+               (format "%s_%s" x (file-name-nondirectory source))
                basedir))
          (makefile-template
           (mis-build-path (mis-directory) ext x "Makefile"))
