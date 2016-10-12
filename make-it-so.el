@@ -117,6 +117,23 @@
 Option -j8 will allow up to 8 asynchronous processes to make the targets."
   :group 'make-it-so)
 
+(defcustom mis-makefile-preamble "
+# This is a template for the Makefile.
+# Parameters should go in the upper half as:
+#     width = 200
+# and be referenced in the command as $(width)
+
+# Press <f5> (mis-save-and-compile) to run this makefile (i.e. apply the transformation).
+# Then in the corresponding dired buffer press one of:
+# C-, (mis-finalize)  : finalize the transformation (delete makefile and other auxiliary files).
+# C-M-. (mis-replace) : to clean up (delete auxiliary files and original file).
+# C-M-, (mis-abort)   : revert back to state before `mis-action' was called.
+
+# "
+  "Preamble to be inserted at the top of makefile templates."
+  :type 'string
+  :group 'make-it-so)
+
 ;;* Setup
 (defvar mis-mode-map
   (let ((map (make-sparse-keymap)))
@@ -196,11 +213,7 @@ Jump to the Makefile of the selected recipe."
          (newe (if (string-match "^to-\\(.*\\)" action)
                    (match-string 1 action)
                  (concat "out." olde)))
-         (preamble (concat "# This is a template for the Makefile.\n"
-                           "# Parameters should go in the upper half as:\n"
-                           "#     width = 200\n"
-                           "# and be referenced in the command as $(width)\n\n"
-                           "# " (make-string 78 ?_)))
+         (preamble (concat mis-makefile-preamble (make-string 78 ?_)))
          (olds (format "DIR%s = $(shell dir *.%s)" (upcase olde) olde))
          (news (format "DIR%s = $(DIR%s:.%s=.%s)"
                        (upcase newe) (upcase olde) olde newe))
