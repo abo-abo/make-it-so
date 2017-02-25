@@ -430,7 +430,9 @@ Switch to other window afterwards."
   "Move FILE to DIR, changing spaces to underscores."
   (let ((dest (expand-file-name
                (replace-regexp-in-string
-                " " "_" (file-name-nondirectory file)) dir)))
+                ":" "β"
+                (replace-regexp-in-string
+                 " " "α" (file-name-nondirectory file))) dir)))
     (rename-file file dest)
     dest))
 
@@ -438,7 +440,9 @@ Switch to other window afterwards."
   "Move FILE to DIR, changing spaces to underscores."
   (let ((dest (expand-file-name
                (replace-regexp-in-string
-                "_" " " (file-name-nondirectory file))
+                "β" ":"
+                (replace-regexp-in-string
+                 "α" " " (file-name-nondirectory file)))
                dir)))
     (rename-file file dest)
     dest))
