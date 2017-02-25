@@ -10,13 +10,13 @@ DIRMP3 = $(DIRFLAC:.flac=.mp3)
 all: clean Makefile $(DIRMP3)
 
 %.mp3: %.flac
-	ffmpeg -i "$<" -ab $(bitrate) -ac $(channels) -ar $(frequency) "$@"
+	avconv -i "$<" -ab $(bitrate) -ac $(channels) -ar $(frequency) "$@"
 	echo "$@" >> provide
 
 clean:
 	rm -f *.mp3 provide
 
 install-tools:
-	sudo apt-get install ffmpeg
+	sudo apt-get install libav-tools
 
 .PHONY: all install-tools clean
