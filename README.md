@@ -58,7 +58,6 @@ Add to `.emacs`:
 
     (add-to-list 'load-path "~/git/make-it-so")
     (require 'make-it-so)
-    (setq mis-recipes-directory "~/git/make-it-so/recipes/")
     (mis-config-default)
 
 This method means that any Makefile that you create will be under

@@ -93,7 +93,12 @@
           (const :tag "Ivy" ivy)
           (const :tag "Helm" helm)))
 
-(defcustom mis-recipes-directory "~/git/make-it-so/recipes/"
+(defvar mis-load-file-name (or load-file-name
+                               (buffer-file-name)))
+
+(defcustom mis-recipes-directory (expand-file-name
+                                  "recipes"
+                                  (file-name-directory mis-load-file-name))
   "Directory with available recipes."
   :type 'directory
   :group 'make-it-so)
@@ -416,6 +421,10 @@ Switch to other window afterwards."
       ;; restored to the proper location.
       (if (file-exists-p makefile-template)
           (copy-file makefile-template makefile-name)
+        (let ((package-location (expand-file-name ".." mis-recipes-directory)))
+          (unless (file-exists-p (expand-file-name ".git" package-location))
+            (warn "%s is not version controlled, recipes may be lost on package update"
+                  package-location)))
         (mis-spit (mis-create-makefile x) makefile-name)
         (push makefile-name targets)
         (push makefile-template sources))
