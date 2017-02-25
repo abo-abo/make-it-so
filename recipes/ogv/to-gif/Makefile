@@ -4,8 +4,6 @@
 # - edit frames with e.g. GIMP
 # Afterwards, call make again to compose the frames in output/ into a gif.
 
-# ——— parameters ———————————————————————————————————————————————————————————————
-
 # ——— implementation ———————————————————————————————————————————————————————————
 OGV = $(shell find . -maxdepth 1 -type f -name '*.ogv' ! -name '*.out.ogv' | tr '\n' ' ')
 GIF = $(OGV:.ogv=.gif)
@@ -29,7 +27,4 @@ clean:
 install-tools:
 	sudo apt-get install ffmpeg imagemagick
 
-require:
-	@echo
-
-.PHONY: all install-tools require provide clean
+.PHONY: all install-tools provide clean

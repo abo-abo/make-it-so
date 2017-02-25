@@ -79,6 +79,7 @@
 (require 'dired)
 (require 'make-mode)
 (require 'cl-lib)
+(require 'package)
 
 ;;* Customization
 (defgroup make-it-so nil
@@ -149,6 +150,9 @@ Option -j8 will allow up to 8 asynchronous processes to make the targets."
   "Easy config."
   (add-hook 'dired-mode-hook 'mis-mode))
 
+(declare-function helm "helm")
+(declare-function ivy-read "ivy")
+
 (defun mis-competing-read (prompt collection action)
   (if (eq mis-completion-method 'helm)
       (progn
@@ -205,21 +209,11 @@ Jump to the Makefile of the selected recipe."
                    "# e.g. sudo apt-get install ffmpeg\n"
                    "install-tools:\n\t"
                    "echo \"No tools required\""))
-         (t-req (concat
-                 "# Use this target when one file requires another.\n"
-                 "# See \"../../cue/split/Makefile\" for an example.\n"
-                 "require:\n\t@echo"))
-         (t-phony ".PHONY: all install-tools require clean")
-         (Makefile (mapconcat 'identity
-                              (list preamble olds news t-all t-new
-                                    t-clean t-tools t-req t-phony)
-                              "\n\n")))
-    (mis-spit Makefile
-              (mis-build-path-create
-               (mis-directory)
-               olde
-               action
-               "Makefile"))))
+         (t-phony ".PHONY: all install-tools clean"))
+    (mapconcat 'identity
+               (list preamble olds news t-all t-new
+                     t-clean t-tools t-phony)
+               "\n\n")))
 
 ;;;###autoload
 (defun make-it-so ()
@@ -233,16 +227,21 @@ proceed to call `mis-action' for that action."
     (wdired-mode
      (call-interactively 'self-insert-command))
     (dired-mode
-     (if (mis-all-equal
-          (mapcar
-           #'file-name-extension
-           (setq mis-current-files
-                 (dired-get-marked-files nil current-prefix-arg))))
-         (let* ((ext (file-name-extension (car mis-current-files)))
-                (candidates (mis-recipes-by-ext ext)))
-           (mis-competing-read
-            "Makefile: " candidates 'mis-action))
-       (error "Mixed extensions in selection")))
+     (let ((dispatch-file (car (dired-get-marked-files nil t)))
+           (files (dired-get-marked-files)))
+       (setq mis-current-files
+             (if (member dispatch-file files)
+                 (cons dispatch-file
+                       (delete dispatch-file files))
+               files))
+       (if (or (mis-all-equal
+                (mapcar #'file-name-extension mis-current-files))
+               (y-or-n-p "Mixed extensions in selection, continue?"))
+           (let* ((ext (file-name-extension (car mis-current-files)))
+                  (candidates (mis-recipes-by-ext ext)))
+             (mis-competing-read
+              "Makefile: " candidates 'mis-action))
+         (error "Mixed extensions in selection"))))
     (t
      (error "Must be called from dired"))))
 
@@ -263,18 +262,24 @@ This function should revert to the state before `mis-action' was called."
                     (equal (expand-file-name default-directory) dir))))
            (buffer-list)))
          (targets (read (mis-slurp "targets")))
+         (first-target (car targets))
          (sources (read (mis-slurp "sources"))))
     (when makefile-buffer
       (kill-buffer makefile-buffer))
     (when dired-buffer
       (kill-buffer dired-buffer))
-    (cl-mapcar 'rename-file targets sources)
+    (let (from to)
+      (while (setq from (pop targets))
+        (setq to (pop sources))
+        (make-directory (file-name-directory to) t)
+        (rename-file from to)))
+    (let ((inhibit-message t))
+      (dired (file-name-directory (directory-file-name dir))))
     (delete-directory dir t)
-    (dired (file-name-directory (directory-file-name dir)))
     (revert-buffer)
     (let ((pt (point)))
       (goto-char (point-min))
-      (if (search-forward (file-name-nondirectory (car targets)))
+      (if (search-forward (file-name-nondirectory first-target))
           (goto-char (match-beginning 0))
         (goto-char pt)))))
 
@@ -398,33 +403,24 @@ Switch to other window afterwards."
                basedir))
          (makefile-template
           (mis-build-path (mis-directory) ext x "Makefile"))
-         (makefile (expand-file-name "Makefile" basedir)))
-    ;; If a recipe exists, copy it.
-    ;; Otherwise create a new one, move it here and mark it to be
-    ;; restored to the proper location.
-    (if (file-exists-p makefile-template)
-        (copy-file makefile-template makefile)
-      (mis-create-makefile x)
-      (push makefile-template sources))
-    (if (file-exists-p "Makefile")
-        (let ((requires (shell-command-to-string "make -s require")))
-          (if (string-match "make:" requires)
-              (error "Makefile must have a \"require\" target")
-            (mkdir dir)
-            (rename-file "Makefile" dir)
-            (setq sources
-                  (append sources
-                          (mapcar 'expand-file-name
-                                  (split-string requires "\n" t))))))
-      (mkdir dir))
+         (makefile-name (expand-file-name "Makefile" dir)))
+    (mkdir dir)
     (let ((targets (mapcar (lambda (x) (mis-rename-quote x dir))
                            sources)))
+      ;; If a recipe exists, copy it.
+      ;; Otherwise create a new one, move it here and mark it to be
+      ;; restored to the proper location.
+      (if (file-exists-p makefile-template)
+          (copy-file makefile-template makefile-name)
+        (mis-spit (mis-create-makefile x) makefile-name)
+        (push makefile-name targets)
+        (push makefile-template sources))
+      (mis-spit (prin1-to-string targets)
+                (expand-file-name "targets" dir))
       (mis-spit (prin1-to-string sources)
                 (expand-file-name "sources" dir))
-      (mis-spit (prin1-to-string targets)
-                (expand-file-name "targets" dir)))
-    (find-file (expand-file-name "Makefile" dir))
-    (mis-makefile-mode)))
+      (find-file makefile-name)
+      (mis-makefile-mode))))
 
 (defun mis-delete-file (file)
   "Delete FILE."

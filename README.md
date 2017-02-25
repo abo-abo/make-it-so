@@ -181,12 +181,7 @@ The "to-" prefix signifies that this is a conversion, adapting the Makefile to t
         install-tools:
         	echo "No tools required"
 
-        # Use this target when one file requires another.
-        # See "../../cue/split/Makefile" for an example.
-        require:
-        	@echo
-
-        .PHONY: all install-tools require clean
+        .PHONY: all install-tools clean
 
 If the action name doesn't have a "to-" prefix, the transformation is assumed to be
 e.g. "svg" -> "out.svg". You can change this of course by editing the Makefile.

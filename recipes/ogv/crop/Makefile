@@ -24,7 +24,4 @@ clean:
 install-tools:
 	sudo apt-get install ffmpeg
 
-require:
-	@echo
-
-.PHONY: all install-tools require clean
+.PHONY: all install-tools clean

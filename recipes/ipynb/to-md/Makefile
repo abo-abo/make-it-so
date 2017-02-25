@@ -14,7 +14,4 @@ clean:
 install-tools:
 	sudo pip install jupyter
 
-require:
-	@echo
-
-.PHONY: all install-tools require clean
+.PHONY: all install-tools clean

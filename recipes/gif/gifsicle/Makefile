@@ -1,7 +1,9 @@
+# ——— parameters ———————————————————————————————————————————————————————————————
+
 # delay between frames in hundredths of a second
 delay = 60
 
-# ______________________________________________________________________________
+# ——— implementation ———————————————————————————————————————————————————————————
 DIRGIF = $(shell ls *.gif | grep -v anime.gif)
 
 all: anime.gif
@@ -17,7 +19,4 @@ clean:
 install-tools:
 	sudo apt-get install gifsicle
 
-require:
-	@echo
-
-.PHONY: all install-tools require clean
+.PHONY: all install-tools clean

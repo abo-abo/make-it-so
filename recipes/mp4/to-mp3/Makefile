@@ -1,5 +1,7 @@
+# ——— parameters ———————————————————————————————————————————————————————————————
 bitrate = 320k
-# ______________________________________________________________________________
+
+# ——— implementation ———————————————————————————————————————————————————————————
 DIRMP4 = $(shell dir *.mp4)
 DIRMP3 = $(DIRMP4:.mp4=.mp3)
 
@@ -15,7 +17,4 @@ clean:
 install-tools:
 	sudo apt-get install libav-tools libavcodec-extra-53
 
-require:
-	@echo
-
-.PHONY: all install-tools require clean
+.PHONY: all install-tools clean

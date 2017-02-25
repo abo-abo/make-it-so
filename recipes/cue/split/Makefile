@@ -33,13 +33,4 @@ clean:
 install-tools:
 	sudo apt-get install cuetools shntool flac wavpack
 
-# List of the required files, besides the cue file.
-#
-# Note that it will require all flac files in the current directory,
-# which isn't very smart, but certainly works when there's just one.
-require:
-	@for a in *.flac; do \
-	echo "$$a"; \
-	done
-
-.PHONY: all install-tools require clean
+.PHONY: all install-tools clean

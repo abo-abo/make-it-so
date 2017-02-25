@@ -14,7 +14,4 @@ clean:
 install-tools:
 	echo "No tools required"
 
-require:
-	@echo
-
-.PHONY: all install-tools require clean
+.PHONY: all install-tools clean
