@@ -107,44 +107,47 @@
   :group 'make-it-so)
 
 (defcustom mis-make-command "make -j8"
-  "Customize the make command bound to `mis-make-key'.
+  "Customize the make command.
 Option -j8 will allow up to 8 asynchronous processes to make the targets."
-  :group 'make-it-so)
-
-(defcustom mis-make-key "<f5>"
-  "`mis-make-command' will be bound to this key in `makefile-mode'."
   :group 'make-it-so)
 
 ;;* Setup
 (defvar mis-mode-map
-  (make-sparse-keymap))
+  (let ((map (make-sparse-keymap)))
+    (mapc (lambda (x) (define-key map (kbd (cdr x)) (car x)))
+          mis-bindings-alist)
+    map))
 
-(let ((map mis-mode-map))
-  (mapc (lambda (x) (define-key map (kbd (cdr x)) (car x)))
-        mis-bindings-alist))
+(defvar mis-makefile-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "<f5>") 'mis-save-and-compile)
+    (define-key map (kbd "C-,") 'mis-finalize)
+    (define-key map (kbd "C-M-,") 'mis-abort)
+    map))
 
 (defvar mis-current-files nil
   "Current set of files to transform.")
 
 ;;;###autoload
 (define-minor-mode mis-mode
-    "Add make-it-so key bindings to `dired'.
+  "Add make-it-so key bindings to `dired-mode'.
 
 \\{mis-mode-map}"
   :keymap mis-mode-map
   :group 'make-it-so)
 
 ;;;###autoload
-(defun mis-mode-on ()
-  "Enable `make-it-so' bindings."
-  (mis-mode 1))
+(define-minor-mode mis-makefile-mode
+  "Add make-it-so key bindings to `makefile-mode'
+
+\\{mis-makefile-mode-map}"
+  :keymap mis-makefile-mode-map
+  :group 'make-it-so)
 
 ;;;###autoload
 (defun mis-config-default ()
   "Easy config."
-  (add-hook 'dired-mode-hook 'mis-mode-on)
-  (when mis-make-key
-    (define-key makefile-mode-map (kbd mis-make-key) 'mis-save-and-compile)))
+  (add-hook 'dired-mode-hook 'mis-mode))
 
 (defun mis-competing-read (prompt collection action)
   (if (eq mis-completion-method 'helm)
@@ -250,18 +253,30 @@ This function should revert to the state before `mis-action' was called."
   (interactive)
   (unless (file-exists-p "Makefile")
     (error "No Makefile in current directory"))
-  (let ((makefile-buffer (find-buffer-visiting (expand-file-name "Makefile")))
-        (dired-buffer (current-buffer))
-        (dir default-directory)
-        (targets (read (mis-slurp "targets")))
-        (sources (read (mis-slurp "sources"))))
+  (let* ((makefile-buffer (find-buffer-visiting (expand-file-name "Makefile")))
+         (dir (expand-file-name default-directory))
+         (dired-buffer
+          (cl-find-if
+           (lambda (b)
+             (with-current-buffer b
+               (and (eq major-mode 'dired-mode)
+                    (equal (expand-file-name default-directory) dir))))
+           (buffer-list)))
+         (targets (read (mis-slurp "targets")))
+         (sources (read (mis-slurp "sources"))))
     (when makefile-buffer
       (kill-buffer makefile-buffer))
+    (when dired-buffer
+      (kill-buffer dired-buffer))
     (cl-mapcar 'rename-file targets sources)
-    (dired "..")
-    (kill-buffer dired-buffer)
     (delete-directory dir t)
-    (revert-buffer)))
+    (dired (file-name-directory (directory-file-name dir)))
+    (revert-buffer)
+    (let ((pt (point)))
+      (goto-char (point-min))
+      (if (search-forward (file-name-nondirectory (car targets)))
+          (goto-char (match-beginning 0))
+        (goto-char pt)))))
 
 ;;;###autoload
 (defun mis-finalize ()
@@ -408,7 +423,8 @@ Switch to other window afterwards."
                 (expand-file-name "sources" dir))
       (mis-spit (prin1-to-string targets)
                 (expand-file-name "targets" dir)))
-    (find-file (expand-file-name "Makefile" dir))))
+    (find-file (expand-file-name "Makefile" dir))
+    (mis-makefile-mode)))
 
 (defun mis-delete-file (file)
   "Delete FILE."
