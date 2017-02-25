@@ -295,8 +295,12 @@ i.e. intermediates and logs and such, will be deleted."
     (error "No Makefile in current directory"))
   (unless (file-exists-p "provide")
     (error "No provide in current directory"))
-  (let ((provides (split-string (mis-slurp "provide") "\n" t)))
-    (mapc (lambda (f) (mis-rename-unquote f (expand-file-name ".."))) provides)
+  (let ((provides (split-string (mis-slurp "provide") "\n" t))
+        (compilation (get-buffer "*compilation*")))
+    (when provides
+      (mapc (lambda (f) (mis-rename-unquote f (expand-file-name ".."))) provides)
+      (when compilation
+        (kill-buffer compilation)))
     (mis-abort)))
 
 ;;;###autoload
