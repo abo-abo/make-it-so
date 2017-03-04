@@ -100,8 +100,7 @@
                                   "recipes"
                                   (file-name-directory mis-load-file-name))
   "Directory with available recipes."
-  :type 'directory
-  :group 'make-it-so)
+  :type 'directory)
 
 (defcustom mis-bindings-alist
   '((make-it-so . ",")
@@ -109,30 +108,29 @@
     (mis-abort . "C-M-,")
     (mis-dispatch . "C-.")
     (mis-replace . "C-M-."))
-  "List of bindings for the minor mode."
-  :group 'make-it-so)
+  "List of bindings for the minor mode.")
 
 (defcustom mis-make-command "make -j8"
   "Customize the make command.
-Option -j8 will allow up to 8 asynchronous processes to make the targets."
-  :group 'make-it-so)
+Option -j8 will allow up to 8 asynchronous processes to make the targets.")
 
 (defcustom mis-makefile-preamble "
 # This is a template for the Makefile.
 # Parameters should go in the upper half as:
 #     width = 200
-# and be referenced in the command as $(width)
-
-# Press <f5> (mis-save-and-compile) to run this makefile (i.e. apply the transformation).
-# Then in the corresponding dired buffer press one of:
-# C-, (mis-finalize)  : finalize the transformation (delete makefile and other auxiliary files).
-# C-M-. (mis-replace) : to clean up (delete auxiliary files and original file).
-# C-M-, (mis-abort)   : revert back to state before `mis-action' was called.
-
-# "
+# and be referenced in the command as $(width)"
   "Preamble to be inserted at the top of makefile templates."
-  :type 'string
-  :group 'make-it-so)
+  :type 'string)
+
+(defcustom mis-makefile-key-descriptions "
+# Press <f5> (mis-save-and-compile) to run this makefile (i.e. apply the transformation).
+
+# Then press one of:
+# C-,   (mis-finalize)  : finalize the transformation (delete makefile and other auxiliary files).
+# C-M-, (mis-abort)     : revert back to state before `mis-action' was called.
+# C-M-. (mis-replace)   : additionally to finalizing, delete the original file."
+  "Key descriptions inserted into Makefiles."
+  :type 'string)
 
 ;;* Setup
 (defvar mis-mode-map
@@ -156,16 +154,14 @@ Option -j8 will allow up to 8 asynchronous processes to make the targets."
   "Add make-it-so key bindings to `dired-mode'.
 
 \\{mis-mode-map}"
-  :keymap mis-mode-map
-  :group 'make-it-so)
+  :keymap mis-mode-map)
 
 ;;;###autoload
 (define-minor-mode mis-makefile-mode
   "Add make-it-so key bindings to `makefile-mode'
 
 \\{mis-makefile-mode-map}"
-  :keymap mis-makefile-mode-map
-  :group 'make-it-so)
+  :keymap mis-makefile-mode-map)
 
 ;;;###autoload
 (defun mis-config-default ()
@@ -213,7 +209,8 @@ Jump to the Makefile of the selected recipe."
          (newe (if (string-match "^to-\\(.*\\)" action)
                    (match-string 1 action)
                  (concat "out." olde)))
-         (preamble (concat mis-makefile-preamble (make-string 78 ?_)))
+         (preamble (concat (substring mis-makefile-preamble 1)
+                           "\n\n#" (make-string 78 ?_) "\n"))
          (olds (format "DIR%s = $(shell dir *.%s)" (upcase olde) olde))
          (news (format "DIR%s = $(DIR%s:.%s=.%s)"
                        (upcase newe) (upcase olde) olde newe))
@@ -433,7 +430,10 @@ Switch to other window afterwards."
       ;; Otherwise create a new one, move it here and mark it to be
       ;; restored to the proper location.
       (if (file-exists-p makefile-template)
-          (copy-file makefile-template makefile-name)
+          (with-temp-buffer
+            (insert (substring mis-makefile-key-descriptions 1) "\n\n")
+            (insert-file-contents makefile-template)
+            (write-file makefile-name))
         (let ((package-location (expand-file-name ".." mis-recipes-directory)))
           (unless (file-exists-p (expand-file-name ".git" package-location))
             (warn "%s is not version controlled, recipes may be lost on package update"
