@@ -10,7 +10,7 @@ all: anime.gif
 
 anime.gif: Makefile $(DIRGIF)
 	rm -f anime.gif
-	gifsicle --delay=$(delay) --colors=256 --loop $(DIRGIF) > $@
+	gifsicle --delay=$(delay) --colors=256 --loop $(DIRGIF) -o $@
 	echo $@ >> provide
 
 clean:
