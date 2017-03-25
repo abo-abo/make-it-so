@@ -231,13 +231,13 @@ Jump to the Makefile of the selected recipe."
                "\n\n")))
 
 ;;;###autoload
-(defun make-it-so ()
+(defun make-it-so (arg)
   "When called from `dired', offer a list of transformations.
 Available trasformations are dispatched on currently selected
 file(s)' extension.  Therefore it's an error when files with
 multiple extensions are marked.  After an action is selected,
 proceed to call `mis-action' for that action."
-  (interactive)
+  (interactive "p")
   (cl-case major-mode
     (wdired-mode
      (call-interactively 'self-insert-command))
@@ -251,9 +251,12 @@ proceed to call `mis-action' for that action."
                files))
        (if (or (mis-all-equal
                 (mapcar #'file-name-extension mis-current-files))
+               (= arg 2)
                (y-or-n-p "Mixed extensions in selection, continue?"))
            (let* ((ext (file-name-extension (car mis-current-files)))
-                  (candidates (mis-recipes-by-ext ext)))
+                  (candidates (if (= arg 2)
+                                  (mis-recipes-by-ext "mix")
+                                (mis-recipes-by-ext ext))))
              (mis-competing-read
               "Makefile: " candidates 'mis-action))
          (error "Mixed extensions in selection"))))
@@ -294,6 +297,8 @@ This function should revert to the state before `mis-action' was called."
     (revert-buffer)
     (let ((pt (point)))
       (goto-char (point-min))
+      (when (string-match "\\.mix\\'" first-target)
+        (setq first-target (substring first-target 0 (match-beginning 0))))
       (if (search-forward (file-name-nondirectory first-target))
           (goto-char (match-beginning 0))
         (goto-char pt)))))
@@ -412,9 +417,10 @@ Switch to other window afterwards."
 
 (defun mis-action (x)
   "Make it so for recipe X."
-  (let* ((sources mis-current-files)
+  (let* ((mix-p (= current-prefix-arg 2))
+         (sources mis-current-files)
          (source (file-name-nondirectory (car sources)))
-         (ext (file-name-extension source))
+         (ext (if mix-p "mix" (file-name-extension source)))
          (basedir (or (file-name-directory source)
                       default-directory))
          (dir (expand-file-name
@@ -424,8 +430,10 @@ Switch to other window afterwards."
           (mis-build-path (mis-directory) ext x "Makefile"))
          (makefile-name (expand-file-name "Makefile" dir)))
     (mkdir dir)
-    (let ((targets (mapcar (lambda (x) (mis-rename-quote x dir))
-                           sources)))
+    (let ((targets (mapcar
+                    (lambda (x)
+                      (mis-rename-quote x dir mix-p))
+                    sources)))
       ;; If a recipe exists, copy it.
       ;; Otherwise create a new one, move it here and mark it to be
       ;; restored to the proper location.
@@ -452,13 +460,15 @@ Switch to other window afterwards."
   "Delete FILE."
   (move-file-to-trash file))
 
-(defun mis-rename-quote (file dir)
+(defun mis-rename-quote (file dir &optional mix)
   "Move FILE to DIR, changing spaces to underscores."
   (let ((dest (expand-file-name
                (replace-regexp-in-string
                 ":" "β"
                 (replace-regexp-in-string
                  " " "α" (file-name-nondirectory file))) dir)))
+    (when mix
+      (setq dest (concat dest ".mix")))
     (rename-file file dest)
     dest))
 
