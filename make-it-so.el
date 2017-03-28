@@ -417,7 +417,7 @@ Switch to other window afterwards."
 
 (defun mis-action (x)
   "Make it so for recipe X."
-  (let* ((mix-p (= current-prefix-arg 2))
+  (let* ((mix-p (eq current-prefix-arg 2))
          (sources mis-current-files)
          (source (file-name-nondirectory (car sources)))
          (ext (if mix-p "mix" (file-name-extension source)))
