@@ -15,6 +15,6 @@ clean:
 	rm -f *.mp3 provide
 
 install-tools:
-	sudo apt-get install libav-tools libavcodec-extra-53
+	sudo apt-get install libav-tools libavcodec-extra
 
 .PHONY: all install-tools clean
