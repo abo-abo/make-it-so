@@ -355,7 +355,9 @@ In addition to `mis-finalize' move source files to trash."
 Switch to other window afterwards."
   (interactive)
   (save-buffer)
-  (compile mis-make-command))
+  (compile mis-make-command)
+  (with-current-buffer (compilation-find-buffer)
+    (mis-makefile-mode)))
 
 ;;* Utilities
 (defun mis-directory-files (directory)
